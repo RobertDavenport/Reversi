@@ -1,0 +1,45 @@
+.container {
+    margin: auto;
+    width: 50%;
+    height: 50%
+}
+.board {
+    width: 100%;
+    height: 100%;
+    table-layout: fixed
+}
+
+.empty-square {
+    background-color: #115D33;
+    border: 2px solid black;
+    width: 50%;
+}
+
+.piece {
+    border-radius: 50%;
+    box-sizing: border-box;
+    box-shadow: 2px 2px 4px #222;
+    height: 100%;
+    width: 100%;
+    margin: auto;
+    transition: width .2s 0s linear, background-color 0s .2s linear;
+    
+}
+
+.white {
+    background: white;
+}
+
+.black {
+    background: black;
+}
+
+.legal {
+    background: gray;
+    opacity: .5;
+    transform: scale(.4);  
+}
+
+.display-none {
+    display: none;
+}
