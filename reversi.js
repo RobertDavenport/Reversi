@@ -10,6 +10,16 @@ var initialBoard =  [   [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
                         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
                     ];
 
+var debugBoard =    [   ['w', 'b', 'b', 'b', 'b', 'b', 'b', ' '],
+                        ['w', 'w', 'b', 'w', 'w', 'w', 'w', 'w'],
+                        ['b', 'b', 'w', 'b', 'b', 'w', 'b', 'w'],
+                        ['b', 'b', 'b', 'w', 'b', 'w', 'b', 'w'],
+                        ['b', 'w', 'b', 'b', 'w', 'b', 'w', 'w'],
+                        ['b', 'b', 'b', 'w', 'b', 'w', 'b', 'w'],
+                        ['b', 'b', 'b', 'b', 'w', 'w', 'w', 'w'],
+                        [' ', 'w', 'w', 'w', 'w', 'w', 'w', 'w']
+                ];
+
 /* north, east, south, west, north-east, south-east, south-west, north-west (x,y)*/                    
 var adjacentCoordinates = [ [0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1] ];
 
@@ -29,67 +39,83 @@ function calculateLegalMoves(board, player){
 }
 
 function isLegalMove(board, row, column, player){
-    if(checkAdjacent(board, row, column, player) && checkLine(board, row, column, player))
+    if(checkAdjacent(board, row, column, player))
         return true;
 }
 
 function checkAdjacent(board, row, column, player){
     return adjacentCoordinates.some(coordinate => {
-       return checkForOpponent(board, getOpponent(player), row + coordinate[1], column + coordinate[0])
+       return checkForOpponent(board, getOpponent(player), row, column, coordinate[1], coordinate[0])
    });
 }
 
+// not used now, checkForPlayer now called in check adjacent
 function checkLine(board, row, column, player){
-    return (adjacentCoordinates.some(direction => {
+    return (adjacentCoordinates.some(dir => {
         /*2x direction to skip*/
-        return (checkForPlayer(board, row, column, player, direction[0] + direction[0], direction[1] + direction[1]))
+        return (checkForPlayer(board, row + dir[1] + dir[1], column + dir[0] + dir[0], player, dir[0], dir[1]))
    }));
 }
 
 function checkForPlayer(board, row, column, player, x, y){
-    /* ignore out of bounds */
+    /* ignore out of bounds for this move */
     if(row < 0 || row > 7 || column < 0 || column > 7)
         return false;
 
-    else if (board[row][column] == player)
-        return true;
+    /* ignore out of bounds for next move */
+    if(row + y < 0 || row + y > 7 || column + x < 0 || column + x > 7)
+        return false;
     
-    else 
-        return checkForPlayer(board, row + y, column + x, player, x, y) 
+    if (board[row][column] == player)
+        return true;
+
+    return checkForPlayer(board, row + y, column + x, player, x, y) 
 }
 
-function checkForOpponent(board, opponent, x, y){
+function checkForOpponent(board, opponent, row, column, x, y){
     /* ignore out of bounds */
-    if(x < 0 || x > 7 || y < 0 || y > 7)
+    if(row + y < 0 || row + y > 7 || column + x < 0 || column + x > 7)
         return false;
 
     /* must be adjacent to opponent piece */   
-    else if(board[x][y] == opponent)
-        return true;
+    else if(board[row + y][column + x] == opponent){
+        // see if player has a tile in this line
+        if(checkForPlayer(board, row+y+y, column+x+x, getOpponent(opponent), x, y))
+            return true;
+    }
     
     else
         return false;
 }
 
 function playMove(board, player, move){
-    adjacentCoordinates.forEach(direction => flipOpponentPieces(board, move[0], move[1], player, direction[0], direction[1]))
+    // flip current piece since it is a known legal move
+    board[move[0]][move[1]] = player
+    // attempt to flip opponents pieces recursively in all directions
+    adjacentCoordinates.forEach(direction => flipOpponentPieces(board, move[0]+direction[0], move[1]+direction[1], player, direction[0], direction[1]))
     return board;
 }
 
-/* fix this */
+
 function flipOpponentPieces(board, row, column, player, x, y){
-    /* ignore out of bounds */
+    // ignore out of bounds
     if(row < 0 || row > 7 || column < 0 || column > 7)
         return false;
 
-    if(board[row][column] !== ' ')
+    if(board[row][column] == ' ')
         return false;
     
     if(board[row][column] == player)
         return true
 
-    flipOpponentPieces(board, (row + x), (column + y), player, x, y)
-        board[row][column] = player  
+    else
+        if(flipOpponentPieces(board, (row + x), (column + y), player, x, y)){
+            board[row][column] = player
+            return true;  
+        }
+        else
+            return false;
+            
 }
 
 function getOpponent(player){
@@ -106,17 +132,56 @@ function clearLegalMovesFromBoard(board){
     return board;
 }
 
+function calculateBoardState(board){
+    var black = 0;
+    var white = 0;
+    var legal = 0;
+    var avail = 0;
+    for(i=0; i<board.length; i++){
+        for(j=0; j<board[0].length; j++){
+
+            if(board[i][j] == 'b')
+                black++
+
+            else if(board[i][j] == 'w')
+                white++
+
+            else if(board[i][j] == 'l')
+                legal++
+
+            else if(board[i][j] == ' ')
+                avail = 1 + legal
+        }
+    }
+    return [black, white, legal, avail];
+}
+
 function getPlayerMove(e){
     var row = parseInt(e.getAttribute("data-row"))
     var col = parseInt(e.getAttribute("data-col"))
-
+    
     board = playMove(board, player, [row,col])
     board = clearLegalMovesFromBoard(board)
     player = getOpponent(player);
     board = calculateLegalMoves(board, player);
+    // get the new state of the board
+    var boardState = calculateBoardState(board)
+    // if no legal moves for player, flip board
+    if (boardState[2] == 0){
+        player = getOpponent(player)
+        board = calculateLegalMoves(board, player)
+        boardState = calculateBoardState(board)
+        // neither player have a move
+        if (boardState[2] == 0)
+            endGame(boardState)
+    }
+    // no more available moves
+    if (boardState[3] == 0)
+        endGame(boardState)
+
     clearScreen()
     drawBoard(board)
-
+    displayGameState(boardState[0], boardState[1], player)
 }
 
 function clearScreen(){
@@ -172,11 +237,31 @@ function drawBoard(board){
     document.body.appendChild(container) 
 }
 
+function displayGameState(blackScore, whiteScore, player){
+    var blackDisplay = document.getElementById('blackScore')
+    var whiteDisplay = document.getElementById('whiteScore')
+    var playerDisplay = document.getElementById('currentPlayer')
+    blackDisplay.innerHTML = blackScore
+    whiteDisplay.innerHTML = whiteScore
+    playerDisplay.innerHTML = (player == 'b') ? 'black' : 'white'
+}
+
+function endGame(boardState){
+    var winner = document.getElementById('winner')
+    var winnerLabel = document.getElementById('winnerLabel')
+    winner.innerHTML = (Math.max(boardState[0], boardState[1]) == boardState[0]) ? 'BLACK!!' : 'WHITE!!'
+    winner.classList.remove('display-none')
+    winnerLabel.classList.remove('display-none')
+}
+
 
 
 board = initialBoard
+//board = debugBoard
+//player = getOpponent(player)
 board = calculateLegalMoves(board, player);
 drawBoard(board)
+displayGameState(2, 2, player)
 
 
 
