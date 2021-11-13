@@ -20,22 +20,32 @@ var debugBoard =    [   ['w', 'b', 'b', 'b', 'b', 'b', 'b', ' '],
                         [' ', 'w', 'w', 'w', 'w', 'w', 'w', 'w']
                 ];
 
+var lmDebugBoard =  [   [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                        [' ', ' ', 'b', ' ', ' ', 'w', ' ', ' '],
+                        [' ', ' ', ' ', 'b', 'w', ' ', ' ', ' '],
+                        [' ', ' ', ' ', 'w', 'b', ' ', ' ', ' '],
+                        [' ', ' ', ' ', 'w', 'b', ' ', ' ', ' '],
+                        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                        [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
+                    ];
+
 /* north, east, south, west, north-east, south-east, south-west, north-west (x,y)*/                    
 var adjacentCoordinates = [ [0, -1], [1, 0], [0, 1], [-1, 0], [1, -1], [1, 1], [-1, 1], [-1, -1] ];
 
 function calculateLegalMoves(board, player){
+    let currentBoard = copy2DArray(board) 
     for (row = 0; row < 8; row++) {
         for (column = 0; column < 8; column++){
             if (board[row][column] === ' ') {
                 if (isLegalMove(board, row, column, player)){
                     /* if it is a legal move do something */
-                    board[row][column] = 'l'
+                    currentBoard[row][column] = 'l'
                 }
             }
         }
     }
-    console.log(board)
-    return board
+    return currentBoard
 }
 
 function isLegalMove(board, row, column, player){
@@ -50,11 +60,27 @@ function checkAdjacent(board, row, column, player){
 }
 
 // not used now, checkForPlayer now called in check adjacent
-function checkLine(board, row, column, player){
-    return (adjacentCoordinates.some(dir => {
-        /*2x direction to skip*/
-        return (checkForPlayer(board, row + dir[1] + dir[1], column + dir[0] + dir[0], player, dir[0], dir[1]))
-   }));
+// function checkLine(board, row, column, player){
+//     return (adjacentCoordinates.some(dir => {
+//         /*2x direction to skip*/
+//         return (checkForPlayer(board, row + dir[1] + dir[1], column + dir[0] + dir[0], player, dir[0], dir[1]))
+//    }));
+// }
+
+function checkForOpponent(board, opponent, row, column, x, y){
+    /* ignore out of bounds */
+    if(row + y < 0 || row + y > 7 || column + x < 0 || column + x > 7)
+        return false;
+
+    /* must be adjacent to opponent piece */   
+    else if(board[row + y][column + x] == opponent){
+        // see if player has a tile in this line
+        if(checkForPlayer(board, row+y, column+x, getOpponent(opponent), x, y))
+            return true;
+    }
+    
+    else
+        return false;
 }
 
 function checkForPlayer(board, row, column, player, x, y){
@@ -66,34 +92,25 @@ function checkForPlayer(board, row, column, player, x, y){
     if(row + y < 0 || row + y > 7 || column + x < 0 || column + x > 7)
         return false;
     
+    if (board[row][column] == ' ')
+        return false
+    
+    if (board[row][column] == 'l')
+        return false
+    
     if (board[row][column] == player)
         return true;
 
     return checkForPlayer(board, row + y, column + x, player, x, y) 
 }
 
-function checkForOpponent(board, opponent, row, column, x, y){
-    /* ignore out of bounds */
-    if(row + y < 0 || row + y > 7 || column + x < 0 || column + x > 7)
-        return false;
-
-    /* must be adjacent to opponent piece */   
-    else if(board[row + y][column + x] == opponent){
-        // see if player has a tile in this line
-        if(checkForPlayer(board, row+y+y, column+x+x, getOpponent(opponent), x, y))
-            return true;
-    }
-    
-    else
-        return false;
-}
-
 function playMove(board, player, move){
+    let currentBoard = copy2DArray(board)
     // flip current piece since it is a known legal move
-    board[move[0]][move[1]] = player
+    currentBoard[move[0]][move[1]] = player
     // attempt to flip opponents pieces recursively in all directions
-    adjacentCoordinates.forEach(direction => flipOpponentPieces(board, move[0]+direction[0], move[1]+direction[1], player, direction[0], direction[1]))
-    return board;
+    adjacentCoordinates.forEach(direction => flipOpponentPieces(currentBoard, move[0]+direction[0], move[1]+direction[1], player, direction[0], direction[1]))
+    return currentBoard;
 }
 
 
@@ -103,6 +120,9 @@ function flipOpponentPieces(board, row, column, player, x, y){
         return false;
 
     if(board[row][column] == ' ')
+        return false;
+
+        if(board[row][column] == 'l')
         return false;
     
     if(board[row][column] == player)
@@ -132,6 +152,17 @@ function clearLegalMovesFromBoard(board){
     return board;
 }
 
+function countLegalMoves(board){
+    var legal = 0;
+    for(i=0; i<board.length; i++){
+        for(j=0; j<board[0].length; j++){
+            if(board[i][j] == 'l')
+                legal++
+        }
+    }
+    return legal;
+}
+
 function calculateBoardState(board){
     var black = 0;
     var white = 0;
@@ -150,15 +181,16 @@ function calculateBoardState(board){
                 legal++
 
             else if(board[i][j] == ' ')
-                avail = 1 + legal
+                avail ++
         }
     }
-    return [black, white, legal, avail];
+    return [black, white, legal, (avail + legal)];
 }
 
 function getPlayerMove(e){
     var row = parseInt(e.getAttribute("data-row"))
     var col = parseInt(e.getAttribute("data-col"))
+    player = 'b'
     
     board = playMove(board, player, [row,col])
     board = clearLegalMovesFromBoard(board)
@@ -176,13 +208,33 @@ function getPlayerMove(e){
             endGame(boardState)
     }
     // no more available moves
-    if (boardState[3] == 0)
+    if (boardState[3] + boardState[2] == 0)
         endGame(boardState)
-
+    
     clearScreen()
     drawBoard(board)
     displayGameState(boardState[0], boardState[1], player)
+    sleep(1000).then(() => {
+        playBotMove(board, depth, player)
+    });
+    
 }
+
+function playBotMove(board, depth, player){
+    botMoveIndex = getBotMove(board, depth, player)
+    positions = calculateAllPositions(board, player)
+    board = positions[botMoveIndex]
+    clearScreen()
+    player = getOpponent(player)
+    drawBoard(board)
+    const [black, white, legal, avail] = calculateBoardState(board)
+    displayGameState(black, white, player)
+    
+}
+
+function sleep (time) {
+    return new Promise((resolve) => setTimeout(resolve, time));
+  }
 
 function clearScreen(){
     document.getElementById("container").remove();
@@ -254,16 +306,95 @@ function endGame(boardState){
     winnerLabel.classList.remove('display-none')
 }
 
+function calculateAllPositions(board, player){
+    var allPostions = []
+    let currentBoard = copy2DArray(board)
+    for(let row = 0; row < board.length; row++){
+        for(let col = 0; col < board[0].length; col++){
+            if(board[row][col] == 'l'){
+                childBoard = playMove(currentBoard, player, [row, col])
+                childBoard = clearLegalMovesFromBoard(childBoard)
+                childBoard = calculateLegalMoves(childBoard, getOpponent(player))
+                allPostions.push(childBoard)
+            }
+        }
+    }
+    return allPostions;
+}
 
+function minimax(board, depth, player, maximizingPlayer){
+    const [blackScore, whiteScore, legalMoves, availMoves] = calculateBoardState(board)
+    if (depth == 0 || (legalMoves + availMoves) == 0)
+        return [legalMoves]
+    
+    if (maximizingPlayer){
+        maxEval = -1000
+        calculateAllPositions(board, player).forEach(position => {
+            eval = minimax(position, depth-1, getOpponent(player), false)
+            maxEval = Math.max(maxEval, eval)          
+        });
+        return maxEval;
+    }
+    else {
+        minEval = 1000
+        calculateAllPositions(board, player).forEach(position => {
+            eval = minimax(position, depth-1, player, true)
+            minEval = Math.min(minEval, eval)
+        });
+        return minEval
+    }
+}
 
-board = initialBoard
+function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer){
+    const [blackScore, whiteScore, legalMoves, availMoves] = calculateBoardState(board)
+    if (depth == 0 || (legalMoves + availMoves) == 0)
+        return legalMoves
+    
+    allPostions = calculateAllPositions(board)
+
+    if (maximizingPlayer){
+        maxEval = -10000
+        allPostions.some(child => {
+            eval = minimaxWithAlphaBetaPruning(child, depth-1, alpha, beta, false)
+            maxEval = Math.max(maxEval, eval)
+            alpha = Math.max(alpha, eval)
+            if ( beta <= alpha)
+                return true;
+        });
+        return maxEval
+    }
+    else {
+        minEval = 10000
+        allPostions.some(child => {
+            eval = minimaxWithAlphaBetaPruning(child, depth-1, alpha, beta, true)
+            minEval = Math.min(minEval, eval)
+            beta = Math.min(beta, eval)
+            if (beta <= alpha)
+                return true;
+        });
+        return minEval
+    }
+}
+
+function copy2DArray(array) {
+    return array.map(x => [...x]);
+}
+
+function getBotMove(board, depth, player){
+    let newBoard = copy2DArray(board)
+    return calculateAllPositions(newBoard).map(x => minimax(x, depth, player, true)).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
+}
+
+let depth = 4
 //board = debugBoard
+//board = lmDebugBoard
 //player = getOpponent(player)
-board = calculateLegalMoves(board, player);
+let board = calculateLegalMoves(initialBoard, player);
 drawBoard(board)
 displayGameState(2, 2, player)
+//let newBoard = copy2DArray(board)
 
-
+//calculateAllPositions(newBoard).map(x => minimax(x, depth, player, true)).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
 
 
 
