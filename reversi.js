@@ -214,8 +214,8 @@ function getPlayerMove(e){
     clearScreen()
     drawBoard(board)
     displayGameState(boardState[0], boardState[1], player)
-    sleep(1000).then(() => {
-        playBotMove(board, depth, player)
+    sleep(3000).then(() => {
+        board = playBotMove(board, depth, player)
     });
     
 }
@@ -229,6 +229,7 @@ function playBotMove(board, depth, player){
     drawBoard(board)
     const [black, white, legal, avail] = calculateBoardState(board)
     displayGameState(black, white, player)
+    return board;
     
 }
 
