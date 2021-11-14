@@ -187,37 +187,51 @@ function calculateBoardState(board){
     return [black, white, legal, (avail + legal)];
 }
 
-function getPlayerMove(e){
+function handlePlayerMove(e){
     var row = parseInt(e.getAttribute("data-row"))
     var col = parseInt(e.getAttribute("data-col"))
-    player = 'b'
-    
-    board = playMove(board, player, [row,col])
-    board = clearLegalMovesFromBoard(board)
-    player = getOpponent(player);
-    board = calculateLegalMoves(board, player);
-    // get the new state of the board
-    var boardState = calculateBoardState(board)
-    // if no legal moves for player, flip board
-    if (boardState[2] == 0){
+
+    // safegaurd that the player is black
+    player = 'b'  
+    board = playMove(board, player, [row, col])
+
+    // change player and refresh board
+    player = getOpponent(player)
+    board = prepareBoard(board, player)
+    // if no legal moves for player, opponent turn
+    if (countLegalMoves(board) == 0){
+        // change player and refresh board
         player = getOpponent(player)
-        board = calculateLegalMoves(board, player)
-        boardState = calculateBoardState(board)
-        // neither player have a move
-        if (boardState[2] == 0)
-            endGame(boardState)
+        board = prepareBoard(board, player)
+        // neither player or bot have a move
+        if (countLegalMoves(board) == 0)
+            endGame(board)
+        else
+            board = playBotMove(board, depth, player)
+            return;
     }
     // no more available moves
-    if (boardState[3] + boardState[2] == 0)
-        endGame(boardState)
-    
+    // if (boardState[3] + boardState[2] == 0)
+    //     endGame(board)
+
+    drawGUI(board, player)
+    sleep(1000).then(() => {
+        board = playBotMove(board, depth, player)
+    }); 
+}
+
+function drawGUI(board){
+    const [blackScore, whiteScore, legalMoves, availMoves] = calculateBoardState(board)
     clearScreen()
     drawBoard(board)
-    displayGameState(boardState[0], boardState[1], player)
-    sleep(3000).then(() => {
-        board = playBotMove(board, depth, player)
-    });
-    
+    displayGameState(blackScore, whiteScore, player)
+}
+
+function prepareBoard(board, player){
+    freshBoard = copy2DArray(board)
+    freshBoard = clearLegalMovesFromBoard(freshBoard)
+    freshBoard = calculateLegalMoves(freshBoard, player);
+    return freshBoard
 }
 
 function playBotMove(board, depth, player){
@@ -225,17 +239,25 @@ function playBotMove(board, depth, player){
     positions = calculateAllPositions(board, player)
     board = positions[botMoveIndex]
     clearScreen()
-    player = getOpponent(player)
     drawBoard(board)
+    player = getOpponent(player)
     const [black, white, legal, avail] = calculateBoardState(board)
     displayGameState(black, white, player)
+
+    // must handle the player having no moves here since they will not have a button to press
+    // bot will continue to play if opponent has 0 legal moves
+    if (legal == 0){
+        player = getOpponent(player)
+        playBotMove(board, depth, player)
+    }    
     return board;
     
 }
 
+// this was needed for very low depths because bot was playing instantly
 function sleep (time) {
     return new Promise((resolve) => setTimeout(resolve, time));
-  }
+}
 
 function clearScreen(){
     document.getElementById("container").remove();
@@ -278,7 +300,7 @@ function drawBoard(board){
                 legalMove.classList.add('piece')
                 legalMove.setAttribute('data-row', row)
                 legalMove.setAttribute('data-col', col)
-                legalMove.setAttribute("onclick", 'getPlayerMove(this)')
+                legalMove.setAttribute("onclick", 'handlePlayerMove(this)')
                 td.appendChild(legalMove)
             }
             tr.appendChild(td)
@@ -291,18 +313,19 @@ function drawBoard(board){
 }
 
 function displayGameState(blackScore, whiteScore, player){
-    var blackDisplay = document.getElementById('blackScore')
-    var whiteDisplay = document.getElementById('whiteScore')
-    var playerDisplay = document.getElementById('currentPlayer')
+    let blackDisplay = document.getElementById('blackScore')
+    let whiteDisplay = document.getElementById('whiteScore')
+    let playerDisplay = document.getElementById('currentPlayer')
     blackDisplay.innerHTML = blackScore
     whiteDisplay.innerHTML = whiteScore
     playerDisplay.innerHTML = (player == 'b') ? 'black' : 'white'
 }
 
-function endGame(boardState){
+function endGame(board){
+    let [blackScore, whiteScore, legalMoves, availMoves] = calculateBoardState(board)
     var winner = document.getElementById('winner')
     var winnerLabel = document.getElementById('winnerLabel')
-    winner.innerHTML = (Math.max(boardState[0], boardState[1]) == boardState[0]) ? 'BLACK!!' : 'WHITE!!'
+    winner.innerHTML = (Math.max(blackScore, whiteScore) == blackScore) ? 'BLACK!!' : 'WHITE!!'
     winner.classList.remove('display-none')
     winnerLabel.classList.remove('display-none')
 }
@@ -326,8 +349,10 @@ function calculateAllPositions(board, player){
 function minimax(board, depth, player, maximizingPlayer){
     const [blackScore, whiteScore, legalMoves, availMoves] = calculateBoardState(board)
     if (depth == 0 || (legalMoves + availMoves) == 0)
-        return [legalMoves]
+        return legalMoves
     
+    allPostions = calculateAllPositions(board)
+
     if (maximizingPlayer){
         maxEval = -1000
         calculateAllPositions(board, player).forEach(position => {
@@ -346,17 +371,15 @@ function minimax(board, depth, player, maximizingPlayer){
     }
 }
 
-function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer){
+function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer, player){
     const [blackScore, whiteScore, legalMoves, availMoves] = calculateBoardState(board)
     if (depth == 0 || (legalMoves + availMoves) == 0)
         return legalMoves
-    
-    allPostions = calculateAllPositions(board)
 
     if (maximizingPlayer){
         maxEval = -10000
-        allPostions.some(child => {
-            eval = minimaxWithAlphaBetaPruning(child, depth-1, alpha, beta, false)
+        calculateAllPositions(board, player).some(child => {
+            eval = minimaxWithAlphaBetaPruning(child, depth-1, alpha, beta, false, getOpponent(player))
             maxEval = Math.max(maxEval, eval)
             alpha = Math.max(alpha, eval)
             if ( beta <= alpha)
@@ -366,8 +389,8 @@ function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer
     }
     else {
         minEval = 10000
-        allPostions.some(child => {
-            eval = minimaxWithAlphaBetaPruning(child, depth-1, alpha, beta, true)
+        calculateAllPositions(board, player).some(child => {
+            eval = minimaxWithAlphaBetaPruning(child, depth-1, alpha, beta, true, getOpponent(player))
             minEval = Math.min(minEval, eval)
             beta = Math.min(beta, eval)
             if (beta <= alpha)
@@ -377,25 +400,36 @@ function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer
     }
 }
 
-function copy2DArray(array) {
+function copy2DArray(array){
     return array.map(x => [...x]);
 }
 
 function getBotMove(board, depth, player){
     let newBoard = copy2DArray(board)
-    return calculateAllPositions(newBoard).map(x => minimax(x, depth, player, true)).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
+    if (withPruning)
+        return calculateAllPositions(newBoard).map(x => minimaxWithAlphaBetaPruning(x, depth-1, -1000, 1000, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
+    else 
+        return calculateAllPositions(newBoard).map(x => minimax(x, depth-1, player, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
 }
 
-let depth = 4
-//board = debugBoard
-//board = lmDebugBoard
-//player = getOpponent(player)
-let board = calculateLegalMoves(initialBoard, player);
+function setDepth(){
+    // sets the global depth when select is changed
+    depth = parseInt(document.getElementById("depth").value)
+}
+
+function setPruning(){
+    withPruning = parseInt(document.getElementById("depth").value) == 1 ? true : false
+}
+
+// Default values
+var withPruning = true
+var depth = 6
+
+board = calculateLegalMoves(initialBoard, player);
+// initialize GUI
 drawBoard(board)
 displayGameState(2, 2, player)
 //let newBoard = copy2DArray(board)
-
-//calculateAllPositions(newBoard).map(x => minimax(x, depth, player, true)).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
 
 
 

@@ -4,6 +4,19 @@
 </head>
 
 <body>
+    <label>Depth</label>
+    <select id="depth" onchange="setDepth()">
+        <option value="2">2</option>
+        <option value="4">4</option>
+        <option value="6" selected="selected">6</option>
+        <option value="8">8</option>
+        <option value="10">10</option>
+    </select>
+    <label>Enable Pruning</label>
+    <select id="pruning" onchange="setPruning()">
+        <option value="1">Yes</option>
+        <option value="0">no</option>
+    </select>
     <div id="gameStats" class="stats">
         <h3>Reversi</h2>
         <label>Black Score: </label><label id="blackScore"></label><br>
