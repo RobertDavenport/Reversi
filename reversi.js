@@ -410,9 +410,9 @@ function copy2DArray(array){
 function getBotMove(board, depth, player){
     let newBoard = copy2DArray(board)
     if (withPruning)
-        return calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth, negInf, posInf, true, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
+        return calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth, negInf, posInf, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
     else 
-        return calculateAllPositions(newBoard, player).map(x => minimax(x, depth, player, true, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
+        return calculateAllPositions(newBoard, player).map(x => minimax(x, depth, player, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
 }
 
 function setDepth(){
