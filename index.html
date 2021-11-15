@@ -7,32 +7,36 @@
     <label>Depth </label>
     <select id="depth" onchange="setDepth()">
         <option value="2">2</option>
+        <option value="3">3</option>
         <option value="4">4</option>
+        <option value="5">5</option>
         <option value="6" selected="selected">6</option>
+        <option value="7">7</option>
         <option value="8">8</option>
-    </select>
+    </select><br>
     <label>Enable Pruning </label>
     <select id="pruning" onchange="setPruning()">
         <option value="1">Yes</option>
         <option value="0">no</option>
-    </select>
+    </select><br>
     <label>Select Color </label>
     <select id="color" onchange="setUserColor()">
         <option value="b">Black</option>
         <option value="w">White</option>
     </select>
-    <label>(restarts game) </label>
+    <label>(restarts game) </label><br>
     <label>Heuristic Type </label>
     <select id="heuristic" onchange="setHeuristic()">
         <option value="score">Score</option>
         <option value="board weights">Board Weights</option>
         <option value="legal moves">Legal Moves</option>
-    </select>
+        <option value="combo">Combination</option>
+    </select><br>
     <label>Debug  Mode  </label>
     <select id="debug" onchange="setDebugMode()">
         <option value="0">No</option>
         <option value="1">Yes</option>
-    </select>
+    </select><br>
     <button id="botStart" onclick="botStartGame()">Bot Starts First</button>
     <div id="gameStats" class="stats">
         <h3>Reversi</h2>

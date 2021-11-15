@@ -8,14 +8,14 @@ evaluate the total legal moves. Currently unclear which heuristic is best */
 
 // Weights adapted thanks to Daniel Connelly http://dhconnelly.com/paip-python/docs/paip/othello.html.
 const squareWeights = [
-                         [120, -20,  20,   5,   5,  20, -20, 120],
+                         [999, -20,  20,   5,   5,  20, -20, 999],
                          [-20, -40,  -5,  -5,  -5,  -5, -40, -20],
                          [ 20,  -5,  15,   3,   3,  15,  -5,  20],
                          [  5,  -5,   3,   3,   3,   3,  -5,   5],
                          [  5,  -5,   3,   3,   3,   3,  -5,   5],
                          [ 20,  -5,  15,   3,   3,  15,  -5,  20],
                          [-20, -40,  -5,  -5,  -5,  -5, -40, -20],
-                         [120, -20,  20,   5,   5,  20, -20, 120],
+                         [999, -20,  20,   5,   5,  20, -20, 999],
                     ];
 
 var initialBoard =  [   [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
@@ -314,7 +314,7 @@ async function handlePlayerMove(e){
     // change player and refresh board
     player = getOpponent(player)
     board = prepareBoard(board, player)
-    // if no legal moves for player, opponent turn
+    // if no legal moves for bot, opponent turn
     if (countLegalMoves(board) == 0){
         // change player and refresh board
         player = getOpponent(player)
@@ -325,7 +325,7 @@ async function handlePlayerMove(e){
             return;
         }    
         else {
-            board = playBotMove(board, depth, player)
+            drawGUI(board, player)
             return;
         }       
     }
@@ -488,13 +488,17 @@ function minimax(board, depth, player, maximizingPlayer){
     const [blackScore, whiteScore, legalMoves, availMoves] = calculateBoardState(board)
     // tracks the number or nodes evaluated for display purposes
     totalEvals++
-    if (depth == 0 || (availMoves) == 0)
+    if (depth == 0 || (availMoves) == 0) {
+        board = prepareBoard(board, player)
         if (heuristic == "legal moves")
             return legalMoves
         else if (heuristic == "board weights")
-            return evaluatePositions(getPlayerPositions(board, getOpponent(player)))
+            return getPlayerPositions(board, player)
         else if (heuristic == "score")
             return getScore(player, whiteScore, blackScore)
+        else
+            return getPlayerPositions(board, player) + getScore(player, whiteScore, blackScore)
+    }
 
     if (maximizingPlayer){
         maxEval = negInf
@@ -536,13 +540,16 @@ function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer
         if (heuristic == "legal moves")
             return legalMoves
         else if (heuristic == "board weights")
-            return evaluatePositions(getPlayerPositions(board, getOpponent(player)))
+            return getPlayerPositions(board, player)
         else if (heuristic == "score")
             return getScore(player, whiteScore, blackScore)
+
+        else
+            return getPlayerPositions(board, player) + getScore(player, whiteScore, blackScore)
     }
 
-    console.log(calculateAllPositions(board, player))
-    console.log(calculateAllPositions(board, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, maximizingPlayer, getOpponent(player))))
+    // console.log(calculateAllPositions(board, player))
+    // console.log(calculateAllPositions(board, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, maximizingPlayer, getOpponent(player))))
 
     if (maximizingPlayer){
         maxEval = negInf
@@ -590,8 +597,6 @@ function getBotMove(board, depth, player){
     if (withPruning){
         // The best oneliner of all time... Starts by getting all the positions for the current board. 
         // Mapping each board into an interger values (return of minimax), then reducing to index with the max values
-        console.log(calculateAllPositions(newBoard, player))
-        console.log(calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, false, getOpponent(player))))
         return calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
     }
     else
@@ -611,6 +616,7 @@ function setPruning(){
 // sets user color and restarts game
 function setUserColor(){
     userColor = document.getElementById("color").value
+    botColor = getOpponent(userColor)
     // restart game on change color
     clearScreen()
     startGame(userColor)
@@ -636,17 +642,22 @@ function botStartGame(){
 }
 
 // uses the weights for each square to gauge it's importance
-function getPlayerPositions(board, player){
-    var playerSquares = []
+function getPlayerPositions(board, botColor){
+    var botSquares = []
+    var opponentSquares = []
     for(let row = 0; row < board.length; row++){
         for(let col = 0; col < board[0].length; col++){
-            if(board[row][col] == player){
+            if(board[row][col] == botColor){
                 position = [row, col]
-                playerSquares.push(position)
+                botSquares.push(position)
+            }
+            else if(board[row][col] == getOpponent(botColor)){
+                position = [row, col]
+                opponentSquares.push(position)
             }
         }
     }
-    return playerSquares;
+    return evaluatePositions(botSquares) - evaluatePositions(opponentSquares);
 }
 
 // sum the square weights for a players tiles 
@@ -659,7 +670,7 @@ function evaluatePositions(positions){
 }
 
 function getScore(player, whiteScore, blackScore){
-    return player == 'w' ? (whiteScore - blackScore) : (blackScore - whiteScore)
+    return botColor == 'w' ? (whiteScore - blackScore) : (blackScore - whiteScore)
 }
 
 function setHeuristic(){
@@ -673,9 +684,10 @@ var depth = 6
 var userColor = 'b'
 var totalEvals = 0
 var heuristic = 'score'
+var botColor = 'w'
 
-var posInf = 1000
-var negInf = -1000
+var posInf = 1000000
+var negInf = -1000000
 
 // initialize GUI
 startGame(userColor)

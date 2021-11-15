@@ -1,12 +1,11 @@
 .stats {
     text-align: center;
-    padding-bottom: 10%;
 }
 
 .container {
     margin: auto;
-    width: 50%;
-    height: 50%
+    width: 450px;
+    height: 450px
 }
 .board {
     width: 100%;
