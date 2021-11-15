@@ -541,8 +541,8 @@ function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer
             return getScore(player, whiteScore, blackScore)
     }
 
-    // console.log(calculateAllPositions(board, player))
-    // console.log(calculateAllPositions(board, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, maximizingPlayer, getOpponent(player))))
+    console.log(calculateAllPositions(board, player))
+    console.log(calculateAllPositions(board, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, maximizingPlayer, getOpponent(player))))
 
     if (maximizingPlayer){
         maxEval = negInf
@@ -591,7 +591,7 @@ function getBotMove(board, depth, player){
         // The best oneliner of all time... Starts by getting all the positions for the current board. 
         // Mapping each board into an interger values (return of minimax), then reducing to index with the max values
         console.log(calculateAllPositions(newBoard, player))
-        console.log(calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth-2, negInf, posInf, false, getOpponent(player))))
+        console.log(calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, false, getOpponent(player))))
         return calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
     }
     else
