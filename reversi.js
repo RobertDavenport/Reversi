@@ -187,7 +187,7 @@ function calculateBoardState(board){
     return [black, white, legal, (avail + legal)];
 }
 
-function handlePlayerMove(e){
+async function handlePlayerMove(e){
     var row = parseInt(e.getAttribute("data-row"))
     var col = parseInt(e.getAttribute("data-col"))
 
@@ -211,13 +211,14 @@ function handlePlayerMove(e){
             return;
     }
     // no more available moves
-    // if (boardState[3] + boardState[2] == 0)
-    //     endGame(board)
+    boardState = calculateBoardState(board)
+    if (boardState[3] == 0)
+        endGame(board)
 
     drawGUI(board, player)
-    sleep(1000).then(() => {
+    await sleep(1000).then(() => {
         board = playBotMove(board, depth, player)
-    }); 
+    });
 }
 
 function drawGUI(board){
@@ -238,18 +239,21 @@ function playBotMove(board, depth, player){
     botMoveIndex = getBotMove(board, depth, player)
     positions = calculateAllPositions(board, player)
     board = positions[botMoveIndex]
-    clearScreen()
-    drawBoard(board)
+    drawGUI(board)
     player = getOpponent(player)
     const [black, white, legal, avail] = calculateBoardState(board)
     displayGameState(black, white, player)
 
     // must handle the player having no moves here since they will not have a button to press
     // bot will continue to play if opponent has 0 legal moves
-    if (legal == 0){
+    if (legal == 0 && avail > 0){
         player = getOpponent(player)
+        board = prepareBoard(board, player)
         playBotMove(board, depth, player)
-    }    
+    }
+    else if (avail == 0)
+        endGame(board)
+
     return board;
     
 }
