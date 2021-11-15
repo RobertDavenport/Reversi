@@ -541,10 +541,10 @@ function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer
             return getScore(player, whiteScore, blackScore)
     }
 
-    // if(false){
-    //     console.log(calculateAllPositions(board, player))
-    //     console.log(calculateAllPositions(board, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, maximizingPlayer, getOpponent(player))))
-    // }
+    if(true){
+        console.log(calculateAllPositions(board, player))
+        console.log(calculateAllPositions(board, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, maximizingPlayer, getOpponent(player))))
+    }
 
     if (maximizingPlayer){
         maxEval = negInf
@@ -592,7 +592,7 @@ function getBotMove(board, depth, player){
     if (withPruning){
         // The best oneliner of all time... Starts by getting all the positions for the current board. 
         // Mapping each board into an interger values (return of minimax), then reducing to index with the max values
-        return calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth, negInf, posInf, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
+        return calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth-1, negInf, posInf, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
     }
     else
         return calculateAllPositions(newBoard, player).map(x => minimax(x, depth-1, player, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)       
@@ -659,7 +659,7 @@ function evaluatePositions(positions){
 }
 
 function getScore(player, whiteScore, blackScore){
-    return player == 'b' ? (whiteScore - blackScore) : (blackScore - whiteScore)
+    return player == 'w' ? (whiteScore - blackScore) : (blackScore - whiteScore)
 }
 
 function setHeuristic(){
@@ -667,9 +667,9 @@ function setHeuristic(){
 }
 
 // Default values, can be changed in UI
-var debugMode = true
+var debugMode = false
 var withPruning = true
-var depth = 4
+var depth = 6
 var userColor = 'b'
 var totalEvals = 0
 var heuristic = 'score'
