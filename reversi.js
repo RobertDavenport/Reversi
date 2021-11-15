@@ -328,6 +328,7 @@ function endGame(board){
     winner.innerHTML = (Math.max(blackScore, whiteScore) == blackScore) ? 'BLACK!!' : 'WHITE!!'
     winner.classList.remove('display-none')
     winnerLabel.classList.remove('display-none')
+    drawGUI(board)
 }
 
 // Returns a list of the resulting position for playing each legal move on a board
