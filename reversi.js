@@ -330,6 +330,7 @@ function endGame(board){
     winnerLabel.classList.remove('display-none')
 }
 
+// Returns a list of the resulting position for playing each legal move on a board
 function calculateAllPositions(board, player){
     var allPostions = []
     let currentBoard = copy2DArray(board)
@@ -354,7 +355,7 @@ function minimax(board, depth, player, maximizingPlayer){
     allPostions = calculateAllPositions(board)
 
     if (maximizingPlayer){
-        maxEval = -1000
+        maxEval = negInf
         calculateAllPositions(board, player).forEach(position => {
             eval = minimax(position, depth-1, getOpponent(player), false)
             maxEval = Math.max(maxEval, eval)          
@@ -362,7 +363,7 @@ function minimax(board, depth, player, maximizingPlayer){
         return maxEval;
     }
     else {
-        minEval = 1000
+        minEval = posInf
         calculateAllPositions(board, player).forEach(position => {
             eval = minimax(position, depth-1, player, true)
             minEval = Math.min(minEval, eval)
@@ -373,11 +374,12 @@ function minimax(board, depth, player, maximizingPlayer){
 
 function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer, player){
     const [blackScore, whiteScore, legalMoves, availMoves] = calculateBoardState(board)
-    if (depth == 0 || (legalMoves + availMoves) == 0)
+    if (depth == 0 || (legalMoves + availMoves) == 0){
         return legalMoves
+    }     
 
     if (maximizingPlayer){
-        maxEval = -10000
+        maxEval = negInf
         calculateAllPositions(board, player).some(child => {
             eval = minimaxWithAlphaBetaPruning(child, depth-1, alpha, beta, false, getOpponent(player))
             maxEval = Math.max(maxEval, eval)
@@ -388,7 +390,7 @@ function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer
         return maxEval
     }
     else {
-        minEval = 10000
+        minEval = posInf
         calculateAllPositions(board, player).some(child => {
             eval = minimaxWithAlphaBetaPruning(child, depth-1, alpha, beta, true, getOpponent(player))
             minEval = Math.min(minEval, eval)
@@ -404,12 +406,13 @@ function copy2DArray(array){
     return array.map(x => [...x]);
 }
 
+// Returns the index of the best Board from the minimax Algorithim
 function getBotMove(board, depth, player){
     let newBoard = copy2DArray(board)
     if (withPruning)
-        return calculateAllPositions(newBoard).map(x => minimaxWithAlphaBetaPruning(x, depth-1, -1000, 1000, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
+        return calculateAllPositions(newBoard, player).map(x => minimaxWithAlphaBetaPruning(x, depth, negInf, posInf, true, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
     else 
-        return calculateAllPositions(newBoard).map(x => minimax(x, depth-1, player, false, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
+        return calculateAllPositions(newBoard, player).map(x => minimax(x, depth, player, true, getOpponent(player))).reduce((max, x, i, arr) => x > arr[max] ? i : max, 0)
 }
 
 function setDepth(){
@@ -424,7 +427,8 @@ function setPruning(){
 // Default values
 var withPruning = true
 var depth = 6
-
+var posInf = 1000
+var negInf = -1000
 board = calculateLegalMoves(initialBoard, player);
 // initialize GUI
 drawBoard(board)
