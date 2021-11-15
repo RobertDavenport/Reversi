@@ -164,10 +164,10 @@ function countLegalMoves(board){
 }
 
 function calculateBoardState(board){
-    var black = 0;
-    var white = 0;
-    var legal = 0;
-    var avail = 0;
+    let black = 0;
+    let white = 0;
+    let legal = 0;
+    let avail = 0;
     for(i=0; i<board.length; i++){
         for(j=0; j<board[0].length; j++){
 
@@ -375,7 +375,7 @@ function minimax(board, depth, player, maximizingPlayer){
 function minimaxWithAlphaBetaPruning(board, depth, alpha, beta, maximizingPlayer, player){
     const [blackScore, whiteScore, legalMoves, availMoves] = calculateBoardState(board)
     if (depth == 0 || (legalMoves + availMoves) == 0){
-        return legalMoves
+        return whiteScore-blackScore
     }     
 
     if (maximizingPlayer){
@@ -426,7 +426,7 @@ function setPruning(){
 
 // Default values
 var withPruning = true
-var depth = 6
+var depth = 1
 var posInf = 1000
 var negInf = -1000
 board = calculateLegalMoves(initialBoard, player);
